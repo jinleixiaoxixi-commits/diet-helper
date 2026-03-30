@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>饮食计划助手</title>
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--line:#e8ecf3;--text:#1f2937;--sub:#6b7280;--pri:#5b6cff;--danger:#ef476f;--danger2:#fff0f4;--shadow:0 10px 24px rgba(28,37,64,.08)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+body{max-width:980px;margin:0 auto;padding:12px 12px 20px}
+button,input,select{font:inherit}
+.top{background:linear-gradient(135deg,#3d4f92,#4f64b4);color:#fff;border-radius:24px;padding:16px;box-shadow:var(--shadow);margin-bottom:12px}
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.top h1{font-size:18px;margin:0 0 10px}
+.goal-link{font-size:12px;opacity:.92;cursor:pointer;align-self:flex-start}
+.big{font-size:34px;font-weight:800}
+.progress-wrap{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px;margin-bottom:10px}
+.progress-row{display:grid;grid-template-columns:56px 1fr 58px;gap:8px;align-items:center;font-size:12px}.progress-bar{height:8px;background:rgba(255,255,255,.2);border-radius:999px;overflow:hidden}.progress-fill{height:100%;background:rgba(255,255,255,.92);border-radius:999px}
+.kgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.kcard{background:rgba(255,255,255,.11);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:9px 8px;text-align:center}
+.kcard .l{font-size:12px;opacity:.92}.kcard .v{font-size:16px;font-weight:800;margin-top:4px}
+.stage{display:grid;grid-template-columns:1.08fr .92fr;gap:12px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow)}
+.col{min-height:60vh}
+.meal{padding:12px 12px 14px;margin-bottom:10px;min-height:148px;display:flex;flex-direction:column}
+.meal.drag-over{outline:2px solid var(--pri);background:#f7f9ff}
+.meal-title{font-size:17px;font-weight:800;margin-bottom:6px}
+.meal-meta{font-size:12px;color:var(--sub);line-height:1.25;display:grid;grid-template-columns:1fr 1fr;gap:1px 10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.drop-area{flex:1;display:flex;align-items:flex-start;padding-top:10px;min-height:86px}
+.chips{display:flex;flex-wrap:wrap;gap:2px 5px;align-content:flex-start;width:100%}
+.chip{display:inline-flex;align-items:center;gap:3px;background:rgba(255,255,255,.55);border:none;border-radius:999px;padding:4px 8px;max-width:100%}
+.chip .name{font-weight:400;font-size:12px;color:#344054;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip .qty{border:none;background:transparent !important;appearance:none;-webkit-appearance:none;border-radius:0;padding:0;font-weight:400;font-size:12px;color:#4f64b4;box-shadow:none;outline:none;text-decoration:none;white-space:nowrap;flex-shrink:0}
+.chip .del{display:none}
+.empty{padding:26px 12px;border:none;border-radius:16px;width:100%;min-height:70px;display:flex;align-items:center;justify-content:center;color:#c0c6d4;font-size:12px;text-align:center}
+.lib{padding:12px;position:sticky;top:12px}
+.search{margin-bottom:10px}
+.search-row{display:grid;grid-template-columns:1fr 44px;gap:8px;margin-bottom:10px}
+.search input,.edit input,.edit select{width:100%;border:1px solid var(--line);border-radius:14px;background:#fff;padding:12px 13px;outline:none}
+.add-btn{border:none;border-radius:14px;background:#eef2f9;color:#5b6cff;font-size:22px;line-height:1;height:46px;width:46px;display:flex;align-items:center;justify-content:center;padding:0}
+.cat-tabs{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+.cat-tab{border:none;background:#f4f1ff;color:#5a45d6;border-radius:14px;padding:10px 16px;font-weight:700;box-shadow:inset 0 0 0 1px #ddd6fe}
+.cat-tab.active{background:#6d5efc;color:#fff;box-shadow:none}
+.list{display:flex;flex-wrap:wrap;gap:8px;min-height:220px;align-content:flex-start}
+.food{border:none;background:#eef2f9;color:#1f2937;border-radius:999px;padding:10px 12px;font-weight:400;font-size:12px;display:flex;align-items:center;gap:6px}
+.food.used{opacity:.6}
+.food .info{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#dce3f5;color:#5e6a87;font-size:11px}
+.sheet{position:fixed;inset:0;background:rgba(15,23,42,.28);display:none;align-items:flex-end;justify-content:center;z-index:30}
+.sheet.show{display:flex}
+.panel{width:100%;max-width:760px;max-height:90vh;overflow:auto;background:#fff;border-radius:24px 24px 0 0;padding:16px 14px calc(16px + env(safe-area-inset-bottom) + 74px)}
+.phead{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:12px}
+.ptitle{font-size:24px;font-weight:900}
+.close{border:none;background:#f3f4f6;border-radius:14px;padding:10px 14px}
+.detail-lines{display:flex;flex-direction:column;gap:10px}
+.detail-line{display:grid;grid-template-columns:92px 1fr;gap:10px;align-items:start;font-size:15px;line-height:1.5}
+.detail-key{color:#6b7280}
+.detail-val{word-break:break-word;white-space:pre-wrap}
+.bottom-actions{position:sticky;left:0;right:0;bottom:0;background:#fff;padding-top:10px}
+.btn{border:none;border-radius:14px;padding:14px 14px;font-weight:800}
+.btn-pri{background:var(--pri);color:#fff}
+.btn-danger{background:var(--danger2);color:var(--danger)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.edit{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ghost{position:fixed;left:0;top:0;transform:translate(-50%,-50%);pointer-events:none;z-index:999;background:#5b6cff;color:#fff;padding:10px 12px;border-radius:999px;font-weight:800;box-shadow:0 14px 28px rgba(48,67,170,.28);display:none}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:rgba(15,23,42,.86);color:#fff;padding:10px 14px;border-radius:999px;font-size:13px;display:none;z-index:1000}
+@media (max-width:760px){
+  .stage{grid-template-columns:1fr 1fr;gap:10px}
+  .meal{min-height:162px}
+  .meal-title{font-size:16px}
+  .meal-meta{font-size:10px}
+  .detail-line{grid-template-columns:84px 1fr;font-size:14px}
+}
+</style>
+</head>
+<body>
+  <div class="top">
+    <div class="topbar">
+      <h1>全天总摄入</h1>
+      <div class="goal-link" onclick="openGoalSheet()">目标设置</div>
+    </div>
+    <div style="display:flex;align-items:flex-end;gap:10px;justify-content:flex-start">
+      <div>
+        <span id="bigValue" class="big">0</span>
+        <span id="bigUnit">kcal</span>
+      </div>
+      <div id="metricDropdown" style="position:relative;display:inline-flex;align-items:center">
+        <button id="metricToggle" onclick="toggleMetricMenu(event)" style="border:none;background:transparent;color:#fff;padding:0 0 2px 0;line-height:1;font-size:14px">▾</button>
+        <div id="metricMenu" style="display:none;position:absolute;top:22px;right:0;background:#fff;border-radius:14px;padding:6px;box-shadow:0 10px 24px rgba(28,37,64,.18);min-width:84px;z-index:50">
+          <button onclick="setBigMetric('kcal');closeMetricMenu()" style="display:block;width:100%;border:none;background:transparent;text-align:left;padding:8px 10px;border-radius:10px;color:#1f2937">热量</button>
+          <button onclick="setBigMetric('pro');closeMetricMenu()" style="display:block;width:100%;border:none;background:transparent;text-align:left;padding:8px 10px;border-radius:10px;color:#1f2937">蛋白</button>
+          <button onclick="setBigMetric('fat');closeMetricMenu()" style="display:block;width:100%;border:none;background:transparent;text-align:left;padding:8px 10px;border-radius:10px;color:#1f2937">脂肪</button>
+          <button onclick="setBigMetric('carb');closeMetricMenu()" style="display:block;width:100%;border:none;background:transparent;text-align:left;padding:8px 10px;border-radius:10px;color:#1f2937">碳水</button>
+        </div>
+      </div>
+    </div>
+    <div id="progressWrap" class="progress-wrap"></div>
+    <div class="kgrid">
+      <div class="kcard"><div class="l">热量</div><div class="v"><span id="tkcal2">0</span></div></div>
+      <div class="kcard"><div class="l">蛋白</div><div class="v"><span id="tpro">0</span></div></div>
+      <div class="kcard"><div class="l">脂肪</div><div class="v"><span id="tfat">0</span></div></div>
+      <div class="kcard"><div class="l">碳水</div><div class="v"><span id="tcarb">0</span></div></div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div id="mealSec" class="col"></div>
+    <div class="card lib col">
+      <div class="search-row"><div class="search"><input id="search" placeholder="搜索食物"></div><button class="add-btn" onclick="openAddFoodSheet()">＋</button></div>
+      <div id="catTabs" class="cat-tabs"></div>
+      <div id="foodWrap" class="list"></div>
+    </div>
+  </div>
+
+  <div id="detailSheet" class="sheet">
+    <div class="panel">
+      <div class="phead">
+        <div class="ptitle">食物详情</div>
+        <button class="close" onclick="closeSheet('detailSheet')">关闭</button>
+      </div>
+      <div id="detailLines" class="detail-lines"></div>
+    </div>
+  </div>
+
+  <div id="itemSheet" class="sheet">
+    <div class="panel">
+      <div class="phead">
+        <div class="ptitle">编辑食物</div>
+        <button class="close" onclick="closeSheet('itemSheet')">关闭</button>
+      </div>
+      <div class="edit">
+        <input id="iqty" type="number" min="0" step="0.1">
+        <select id="iunit"></select>
+      </div>
+      <div class="bottom-actions">
+        <div class="row2">
+          <button class="btn btn-danger" id="delBtn">删除</button>
+          <button class="btn btn-pri" id="saveBtn">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="goalSheet" class="sheet">
+    <div class="panel">
+      <div class="phead">
+        <div class="ptitle">目标设置</div>
+        <button class="close" onclick="closeSheet('goalSheet')">关闭</button>
+      </div>
+      <div class="edit">
+        <input id="gkcal" type="number" min="0" placeholder="热量 kcal">
+        <input id="gpro" type="number" min="0" placeholder="蛋白质 g">
+        <input id="gfat" type="number" min="0" placeholder="脂肪 g">
+        <input id="gcarb" type="number" min="0" placeholder="碳水 g">
+      </div>
+      <div class="bottom-actions">
+        <div class="row2">
+          <button class="btn btn-danger" onclick="resetGoals()">重置</button>
+          <button class="btn btn-pri" onclick="saveGoals()">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="addFoodSheet" class="sheet">
+    <div class="panel">
+      <div class="phead">
+        <div class="ptitle">新增食物</div>
+        <button class="close" onclick="closeSheet('addFoodSheet')">关闭</button>
+      </div>
+      <div class="edit" style="grid-template-columns:1fr 1fr">
+        <input id="newFoodName" placeholder="食物名称">
+        <select id="newFoodCat"></select>
+        <input id="newBaseQty" type="number" min="0" placeholder="基础数量">
+        <select id="newBaseUnit">
+          <option>g</option><option>ml</option><option>个</option><option>颗</option><option>根</option><option>盘</option><option>斤</option><option>袋</option><option>包</option><option>盒</option><option>碟</option><option>份</option><option>片</option><option>把</option><option>只</option>
+        </select>
+        <input id="newGI" type="number" min="0" placeholder="GI值">
+        <input id="newUnitWeight" type="number" min="0" placeholder="单位重量(克)">
+        <input id="newKJ" type="number" min="0" step="0.1" placeholder="热量(kJ)">
+        <input id="newProtein" type="number" min="0" step="0.1" placeholder="蛋白质(g)">
+        <input id="newFat" type="number" min="0" step="0.1" placeholder="脂肪(g)">
+        <input id="newCarb" type="number" min="0" step="0.1" placeholder="碳水(g)">
+      </div>
+      <div style="margin-top:10px;display:grid;gap:10px">
+        <input id="newIngredients" placeholder="配料">
+        <input id="newRemark" placeholder="备注">
+      </div>
+      <div class="bottom-actions">
+        <div class="row2">
+          <button class="btn btn-danger" onclick="closeSheet('addFoodSheet')">取消</button>
+          <button class="btn btn-pri" onclick="saveNewFood()">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="ghost" class="ghost"></div>
+  <div id="toast" class="toast"></div>
+
+<script>
+let DB = {"主食": [{"name": "糯玉米", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 55, "ingredients": "糯玉米", "remark": "蒸煮食用", "nutrition": {"kj": 752, "protein": 3.8, "fat": 1.8, "carb": 36.5}, "weights": {"份": 100, "斤": 500}}, {"name": "蒸紫薯", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 75, "ingredients": "紫薯", "remark": "蒸煮食用", "nutrition": {"kj": 477, "protein": 1.02, "fat": 0.26, "carb": 26.95}, "weights": {"大个": 200, "个": 150, "小个": 100, "份": 85, "块": 100}}, {"name": "冬南瓜", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 0, "ingredients": "冬南瓜", "remark": "按图片数据录入", "nutrition": {"kj": 343, "protein": 1.71, "fat": 0.27, "carb": 18.54}, "weights": {"份": 100, "块": 30, "盘": 200, "个": 500}}, {"name": "山药（鲜）", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 51, "ingredients": "山药", "remark": "鲜山药", "nutrition": {"kj": 201, "protein": 1.58, "fat": 0.17, "carb": 10.3}, "weights": {"段": 40, "份": 100, "根": 150}}, {"name": "土豆", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 62, "ingredients": "土豆", "remark": "按图片数据录入", "nutrition": {"kj": 322, "protein": 2.45, "fat": 0.19, "carb": 16.74}, "weights": {"大个": 230, "个": 170, "小个": 130, "块": 60, "斤": 500}}, {"name": "高纤高蛋白燕麦吐司", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 0, "ingredients": "燕麦吐司预拌粉（燕麦粉、谷朊粉）、全麦粉、饮用水、黄油、低聚异麦芽糖（水溶性膳食纤维）、鸡蛋、山梨糖醇液、乳粉、干酵母、食用盐、丙酸钙", "remark": "软式面包；致敏物质：含有麸质谷物及其制品、蛋类及其制品、乳及乳制品", "nutrition": {"kj": 1243, "protein": 14.3, "fat": 8.9, "carb": 36.6}, "weights": {"片": 30, "包": 60}}], "蔬果": [{"name": "西兰花", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 15, "ingredients": "西兰花", "remark": "新鲜蔬菜", "nutrition": {"kj": 96, "protein": 2.91, "fat": 0.5, "carb": 3.08}, "weights": {"颗": 400, "盘": 200}}, {"name": "苹果", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 36, "ingredients": "苹果", "remark": "新鲜水果", "nutrition": {"kj": 192, "protein": 0.34, "fat": 0.17, "carb": 11.65}, "weights": {"小个": 150, "个": 200, "大个": 300}}, {"name": "西红柿", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 15, "ingredients": "西红柿", "remark": "新鲜蔬果", "nutrition": {"kj": 63, "protein": 0.88, "fat": 0.2, "carb": 3.21}, "weights": {"个": 200, "份": 100, "斤": 500}}, {"name": "青枣", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 42, "ingredients": "青枣", "remark": "新鲜水果", "nutrition": {"kj": 155, "protein": 1.02, "fat": 0.26, "carb": 9.1}, "weights": {"个": 15, "颗": 15, "盘": 200, "斤": 500}}, {"name": "蓝莓", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 53, "ingredients": "蓝莓", "remark": "新鲜水果", "nutrition": {"kj": 155, "protein": 0.6, "fat": 0.6, "carb": 6.05}, "weights": {"个": 2, "颗": 2, "盒": 125, "碟": 100}}, {"name": "黄瓜（鲜）", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 15, "ingredients": "黄瓜", "remark": "新鲜蔬果", "nutrition": {"kj": 63, "protein": 0.74, "fat": 0.19, "carb": 2.67}, "weights": {"根": 150, "个": 150, "斤": 500}}, {"name": "丝瓜", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 0, "ingredients": "丝瓜", "remark": "新鲜蔬菜", "nutrition": {"kj": 71, "protein": 1.08, "fat": 0.17, "carb": 3.32}, "weights": {"根": 150, "盘": 200}}, {"name": "生菜", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 15, "ingredients": "生菜", "remark": "新鲜蔬菜", "nutrition": {"kj": 50, "protein": 1.51, "fat": 0.38, "carb": 1.04}, "weights": {"份": 100, "颗": 200}}, {"name": "油麦菜", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 0, "ingredients": "油麦菜", "remark": "新鲜蔬菜", "nutrition": {"kj": 42, "protein": 0.9, "fat": 0.33, "carb": 1.71}, "weights": {"份": 100, "把": 100, "盘": 200}}, {"name": "樱桃番茄", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 15, "ingredients": "樱桃番茄", "remark": "新鲜蔬果", "nutrition": {"kj": 105, "protein": 0.98, "fat": 0.2, "carb": 5.69}, "weights": {"个": 20, "盘": 150, "盒": 150}}, {"name": "奶柿子", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 0, "ingredients": "奶柿子", "remark": "新鲜蔬果", "nutrition": {"kj": 59, "protein": 0.6, "fat": 0.1, "carb": 3.2}, "weights": {"个": 20, "盘": 200, "碟": 50, "盒": 200, "份": 200}}], "肉类": [{"name": "煮鸡蛋", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 0, "ingredients": "鸡蛋", "remark": "熟鸡蛋", "nutrition": {"kj": 515, "protein": 10.41, "fat": 9.03, "carb": 0.09}, "weights": {"个": 60}}, {"name": "鸡蛋白（熟）", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 0, "ingredients": "鸡蛋白", "remark": "熟蛋白", "nutrition": {"kj": 209, "protein": 11.3, "fat": 0.1, "carb": 0.4}, "weights": {"个": 33}}, {"name": "去皮鸡腿（香辣味）", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 0, "ingredients": "鸡腿、饮用水、辣椒、海藻糖、酿造酱油（含焦糖色）、食用盐、鸡粉调味料、食品添加剂（D-异抗坏血酸钠、乙基麦芽酚）、风味型酵母抽提物、食用香精香料、香辛料", "remark": "每袋70克约137kcal；酱卤肉制品类", "nutrition": {"kj": 820, "protein": 27.3, "fat": 5.4, "carb": 9.2}, "weights": {"袋": 70}}, {"name": "清蒸鲈鱼", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 0, "ingredients": "鲈鱼、柠檬、橄榄油、蒸鱼豉油、大葱、姜（鲜）、料酒、盐、蚝油", "remark": "食材配料清单按图片录入", "nutrition": {"kj": 276, "protein": 9.8, "fat": 2.7, "carb": 0.65}, "weights": {"盘": 400, "碟": 100, "份": 100}}, {"name": "虾仁（红）", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 0, "ingredients": "虾仁", "remark": "按图片数据录入", "nutrition": {"kj": 201, "protein": 10.4, "fat": 0.7, "carb": 0}, "weights": {"个": 15, "只": 15, "盘": 250}}], "饮品": [{"name": "新养道0糖脱脂牛奶", "baseQty": 100, "unit": "ml", "unitWeight": 100, "gi": 0, "ingredients": "生牛乳、乳糖酶", "remark": "脱脂调制乳；规格200mL×24包", "nutrition": {"kj": 139, "protein": 3.2, "fat": 0, "carb": 5.0}, "weights": {"包": 200}}]};
+let lookup = {"糯玉米": {"name": "糯玉米", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 55, "ingredients": "糯玉米", "remark": "蒸煮食用", "nutrition": {"kj": 752, "protein": 3.8, "fat": 1.8, "carb": 36.5}, "weights": {"份": 100, "斤": 500}}, "蒸紫薯": {"name": "蒸紫薯", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 75, "ingredients": "紫薯", "remark": "蒸煮食用", "nutrition": {"kj": 477, "protein": 1.02, "fat": 0.26, "carb": 26.95}, "weights": {"大个": 200, "个": 150, "小个": 100, "份": 85, "块": 100}}, "冬南瓜": {"name": "冬南瓜", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 0, "ingredients": "冬南瓜", "remark": "按图片数据录入", "nutrition": {"kj": 343, "protein": 1.71, "fat": 0.27, "carb": 18.54}, "weights": {"份": 100, "块": 30, "盘": 200, "个": 500}}, "山药（鲜）": {"name": "山药（鲜）", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 51, "ingredients": "山药", "remark": "鲜山药", "nutrition": {"kj": 201, "protein": 1.58, "fat": 0.17, "carb": 10.3}, "weights": {"段": 40, "份": 100, "根": 150}}, "土豆": {"name": "土豆", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 62, "ingredients": "土豆", "remark": "按图片数据录入", "nutrition": {"kj": 322, "protein": 2.45, "fat": 0.19, "carb": 16.74}, "weights": {"大个": 230, "个": 170, "小个": 130, "块": 60, "斤": 500}}, "高纤高蛋白燕麦吐司": {"name": "高纤高蛋白燕麦吐司", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 0, "ingredients": "燕麦吐司预拌粉（燕麦粉、谷朊粉）、全麦粉、饮用水、黄油、低聚异麦芽糖（水溶性膳食纤维）、鸡蛋、山梨糖醇液、乳粉、干酵母、食用盐、丙酸钙", "remark": "软式面包；致敏物质：含有麸质谷物及其制品、蛋类及其制品、乳及乳制品", "nutrition": {"kj": 1243, "protein": 14.3, "fat": 8.9, "carb": 36.6}, "weights": {"片": 30, "包": 60}}, "西兰花": {"name": "西兰花", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 15, "ingredients": "西兰花", "remark": "新鲜蔬菜", "nutrition": {"kj": 96, "protein": 2.91, "fat": 0.5, "carb": 3.08}, "weights": {"颗": 400, "盘": 200}}, "苹果": {"name": "苹果", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 36, "ingredients": "苹果", "remark": "新鲜水果", "nutrition": {"kj": 192, "protein": 0.34, "fat": 0.17, "carb": 11.65}, "weights": {"小个": 150, "个": 200, "大个": 300}}, "西红柿": {"name": "西红柿", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 15, "ingredients": "西红柿", "remark": "新鲜蔬果", "nutrition": {"kj": 63, "protein": 0.88, "fat": 0.2, "carb": 3.21}, "weights": {"个": 200, "份": 100, "斤": 500}}, "青枣": {"name": "青枣", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 42, "ingredients": "青枣", "remark": "新鲜水果", "nutrition": {"kj": 155, "protein": 1.02, "fat": 0.26, "carb": 9.1}, "weights": {"个": 15, "颗": 15, "盘": 200, "斤": 500}}, "蓝莓": {"name": "蓝莓", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 53, "ingredients": "蓝莓", "remark": "新鲜水果", "nutrition": {"kj": 155, "protein": 0.6, "fat": 0.6, "carb": 6.05}, "weights": {"个": 2, "颗": 2, "盒": 125, "碟": 100}}, "黄瓜（鲜）": {"name": "黄瓜（鲜）", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 15, "ingredients": "黄瓜", "remark": "新鲜蔬果", "nutrition": {"kj": 63, "protein": 0.74, "fat": 0.19, "carb": 2.67}, "weights": {"根": 150, "个": 150, "斤": 500}}, "丝瓜": {"name": "丝瓜", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 0, "ingredients": "丝瓜", "remark": "新鲜蔬菜", "nutrition": {"kj": 71, "protein": 1.08, "fat": 0.17, "carb": 3.32}, "weights": {"根": 150, "盘": 200}}, "生菜": {"name": "生菜", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 15, "ingredients": "生菜", "remark": "新鲜蔬菜", "nutrition": {"kj": 50, "protein": 1.51, "fat": 0.38, "carb": 1.04}, "weights": {"份": 100, "颗": 200}}, "油麦菜": {"name": "油麦菜", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 0, "ingredients": "油麦菜", "remark": "新鲜蔬菜", "nutrition": {"kj": 42, "protein": 0.9, "fat": 0.33, "carb": 1.71}, "weights": {"份": 100, "把": 100, "盘": 200}}, "樱桃番茄": {"name": "樱桃番茄", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 15, "ingredients": "樱桃番茄", "remark": "新鲜蔬果", "nutrition": {"kj": 105, "protein": 0.98, "fat": 0.2, "carb": 5.69}, "weights": {"个": 20, "盘": 150, "盒": 150}}, "奶柿子": {"name": "奶柿子", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 0, "ingredients": "奶柿子", "remark": "新鲜蔬果", "nutrition": {"kj": 59, "protein": 0.6, "fat": 0.1, "carb": 3.2}, "weights": {"个": 20, "盘": 200, "碟": 50, "盒": 200, "份": 200}}, "煮鸡蛋": {"name": "煮鸡蛋", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 0, "ingredients": "鸡蛋", "remark": "熟鸡蛋", "nutrition": {"kj": 515, "protein": 10.41, "fat": 9.03, "carb": 0.09}, "weights": {"个": 60}}, "鸡蛋白（熟）": {"name": "鸡蛋白（熟）", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 0, "ingredients": "鸡蛋白", "remark": "熟蛋白", "nutrition": {"kj": 209, "protein": 11.3, "fat": 0.1, "carb": 0.4}, "weights": {"个": 33}}, "去皮鸡腿（香辣味）": {"name": "去皮鸡腿（香辣味）", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 0, "ingredients": "鸡腿、饮用水、辣椒、海藻糖、酿造酱油（含焦糖色）、食用盐、鸡粉调味料、食品添加剂（D-异抗坏血酸钠、乙基麦芽酚）、风味型酵母抽提物、食用香精香料、香辛料", "remark": "每袋70克约137kcal；酱卤肉制品类", "nutrition": {"kj": 820, "protein": 27.3, "fat": 5.4, "carb": 9.2}, "weights": {"袋": 70}}, "清蒸鲈鱼": {"name": "清蒸鲈鱼", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 0, "ingredients": "鲈鱼、柠檬、橄榄油、蒸鱼豉油、大葱、姜（鲜）、料酒、盐、蚝油", "remark": "食材配料清单按图片录入", "nutrition": {"kj": 276, "protein": 9.8, "fat": 2.7, "carb": 0.65}, "weights": {"盘": 400, "碟": 100, "份": 100}}, "虾仁（红）": {"name": "虾仁（红）", "baseQty": 100, "unit": "g", "unitWeight": 100, "gi": 0, "ingredients": "虾仁", "remark": "按图片数据录入", "nutrition": {"kj": 201, "protein": 10.4, "fat": 0.7, "carb": 0}, "weights": {"个": 15, "只": 15, "盘": 250}}, "新养道0糖脱脂牛奶": {"name": "新养道0糖脱脂牛奶", "baseQty": 100, "unit": "ml", "unitWeight": 100, "gi": 0, "ingredients": "生牛乳、乳糖酶", "remark": "脱脂调制乳；规格200mL×24包", "nutrition": {"kj": 139, "protein": 3.2, "fat": 0, "carb": 5.0}, "weights": {"包": 200}}};
+const meals = ["早餐", "上午加餐", "午餐", "下午加餐", "晚餐"];
+const categories = ["主食", "蔬果", "肉类", "饮品"];
+const STORAGE = 'diet-mobile-drag-v5-3';
+let editing = null;
+let drag = null;
+let currentCat = categories[0];
+
+function $(id){return document.getElementById(id)}
+function safeParse(v, fb){try{return JSON.parse(v)||fb}catch{return fb}}
+function clone(v){return JSON.parse(JSON.stringify(v))}
+function rid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function round1(n){return Math.round((+n||0)*10)/10}
+function kcal(kj){return (+kj||0)/4.184}
+function toast(msg){const el=$('toast');el.textContent=msg;el.style.display='block';clearTimeout(el._t);el._t=setTimeout(()=>el.style.display='none',1500)}
+
+function load(){const saved=safeParse(localStorage.getItem(STORAGE),null);if(saved&&saved.mealPlan){saved.goals=saved.goals||{kcal:1600,pro:100,fat:50,carb:180};saved.bigMetric=saved.bigMetric||'kcal';return saved;}const mealPlan={};meals.forEach(m=>mealPlan[m]=[]);return {mealPlan,goals:{kcal:1600,pro:100,fat:50,carb:180},bigMetric:'kcal'}}
+let state = load();
+
+function persist(){localStorage.setItem(STORAGE, JSON.stringify(state))}
+function getFood(name){return clone(lookup[name])}
+function catOf(name){return categories.find(c => DB[c].some(x => x.name === name)) || ''}
+function rebuildLookup(){
+  lookup = {};
+  Object.values(DB).forEach(arr => arr.forEach(item => { lookup[item.name] = item; }));
+}
+function openAddFoodSheet(){
+  $('newFoodName').value = '';
+  $('newFoodCat').innerHTML = categories.map(c=>`<option value="${c}">${c}</option>`).join('');
+  $('newBaseQty').value = 100;
+  $('newBaseUnit').value = 'g';
+  $('newGI').value = 0;
+  $('newUnitWeight').value = 100;
+  $('newKJ').value = 0;
+  $('newProtein').value = 0;
+  $('newFat').value = 0;
+  $('newCarb').value = 0;
+  $('newIngredients').value = '';
+  $('newRemark').value = '';
+  $('addFoodSheet').classList.add('show');
+}
+function saveNewFood(){
+  const name = ($('newFoodName').value || '').trim();
+  const cat = $('newFoodCat').value;
+  const baseQty = Number($('newBaseQty').value) || 100;
+  const unit = $('newBaseUnit').value || 'g';
+  const gi = Number($('newGI').value) || 0;
+  const unitWeight = Number($('newUnitWeight').value) || baseQty;
+  const kj = Number($('newKJ').value) || 0;
+  const protein = Number($('newProtein').value) || 0;
+  const fat = Number($('newFat').value) || 0;
+  const carb = Number($('newCarb').value) || 0;
+  const ingredients = ($('newIngredients').value || '').trim();
+  const remark = ($('newRemark').value || '').trim();
+  if(!name){ toast('请输入食物名称'); return; }
+  const exists = Object.values(DB).some(arr => arr.some(x => x.name === name));
+  if(exists){ toast('食物已存在'); return; }
+  DB[cat].unshift({
+    name, baseQty, unit, unitWeight, gi,
+    ingredients, remark,
+    nutrition: { kj, protein, fat, carb },
+    weights: {}
+  });
+  rebuildLookup();
+  currentCat = cat;
+  closeSheet('addFoodSheet');
+  renderCatTabs();
+  renderFoods();
+  toast('已新增');
+}
+function allUnitsForFood(food){const set=new Set([food.unit]);Object.keys(food.weights||{}).forEach(k=>set.add(k));if(food.unit==='g'||food.unit==='ml')set.add('斤');return Array.from(set)}
+function gramsFor(item){const food=getFood(item.name);if(item.unit==='g'||item.unit==='ml')return +item.quantity||0;if(item.unit==='斤')return (+item.quantity||0)*500;const w=+(food.weights?.[item.unit]||food.unitWeight||0);return (+item.quantity||0)*w}
+function factor(item){const food=getFood(item.name);const grams=gramsFor(item);if(food.unit==='g'||food.unit==='ml')return grams/(+food.baseQty||100);if(food.unit==='斤')return grams/500/(+food.baseQty||1);const bw=+(food.weights?.[food.unit]||food.unitWeight||0);if(bw>0)return grams/(bw*(+food.baseQty||1));return grams/100}
+function mealTotals(meal){return state.mealPlan[meal].reduce((a,it)=>{const f=getFood(it.name);const k=factor(it);a.kj+=(+f.nutrition.kj||0)*k;a.pro+=(+f.nutrition.protein||0)*k;a.fat+=(+f.nutrition.fat||0)*k;a.carb+=(+f.nutrition.carb||0)*k;return a},{kj:0,pro:0,fat:0,carb:0})}
+function grand(){return meals.reduce((a,m)=>{const t=mealTotals(m);a.kj+=t.kj;a.pro+=t.pro;a.fat+=t.fat;a.carb+=t.carb;a.items+=state.mealPlan[m].length;return a},{kj:0,pro:0,fat:0,carb:0,items:0})}
+
+function renderTop(){const t=grand();$('tkcal2').textContent=round1(kcal(t.kj));$('tpro').textContent=round1(t.pro);$('tfat').textContent=round1(t.fat);$('tcarb').textContent=round1(t.carb);
+const goals=state.goals||{kcal:1600,pro:100,fat:50,carb:180};
+const metric=state.bigMetric||'kcal';
+const metricMap={
+  kcal:[round1(kcal(t.kj)),'kcal'],
+  pro:[round1(t.pro),'g'],
+  fat:[round1(t.fat),'g'],
+  carb:[round1(t.carb),'g']
+};
+$('bigValue').textContent=metricMap[metric][0];
+$('bigUnit').textContent=metricMap[metric][1];
+const rows=[['热量',round1(kcal(t.kj)),goals.kcal],['蛋白',round1(t.pro),goals.pro],['脂肪',round1(t.fat),goals.fat],['碳水',round1(t.carb),goals.carb]];
+$('progressWrap').innerHTML=rows.map(([name,val,goal])=>{const pct=Math.max(0,Math.min(100,goal?val/goal*100:0));return `<div class="progress-row"><span>${name}</span><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><span>${val}/${goal}</span></div>`}).join('');
+}
+function renderMeals(){
+  $('mealSec').innerHTML = meals.map(meal=>{const t=mealTotals(meal);const items=state.mealPlan[meal];return `
+  <div class="card meal" data-meal="${meal}">
+    <div class="meal-title">${meal}</div>
+    <div class="meal-meta">
+      <span>热量 ${round1(kcal(t.kj))} kcal</span>
+      <span>蛋白 ${round1(t.pro)} g</span>
+      <span>脂肪 ${round1(t.fat)} g</span>
+      <span>碳水 ${round1(t.carb)} g</span>
+    </div>
+    <div class="drop-area">
+      <div class="chips">
+        ${items.length ? items.map(it=>`<div class="chip"><span class="name">${it.name}</span><button class="qty" onclick="editItem('${meal}','${it.id}')">${it.quantity} ${it.unit}</button></div>`).join('') : `<div class="empty">食物拖到这里</div>`}
+      </div>
+    </div>
+  </div>`}).join('');
+}
+function usedSet(){const s=new Set();meals.forEach(m=>state.mealPlan[m].forEach(it=>s.add(it.name)));return s}
+function renderCatTabs(){$('catTabs').innerHTML = categories.map(c=>`<button class="cat-tab ${c===currentCat?'active':''}" onclick="setCat('${c}')">${c}</button>`).join('')}
+function setCat(c){currentCat=c;renderCatTabs();renderFoods()}
+function setBigMetric(metric){state.bigMetric=metric;persist();renderTop()}
+function toggleMetricMenu(e){if(e)e.stopPropagation(); const menu=$('metricMenu'); menu.style.display = menu.style.display==='block' ? 'none' : 'block';}
+function closeMetricMenu(){const menu=$('metricMenu'); if(menu) menu.style.display='none';}
+function renderFoods(){
+  const kw=($('search').value||'').trim().toLowerCase();const used=usedSet();
+  const list = DB[currentCat].filter(x=>x.name.toLowerCase().includes(kw));
+  $('foodWrap').innerHTML = list.map(f=>`<button class="food ${used.has(f.name)?'used':''}" data-food="${f.name}">${f.name}<span class="info" data-info="${f.name}">i</span></button>`).join('');
+  bindFoodInteractions();
+}
+function renderAll(){renderTop();renderMeals();renderCatTabs();renderFoods()}
+
+function closeSheet(id){$(id).classList.remove('show')}
+function openDetail(name){
+  const f=getFood(name);
+  const lines = [
+    ['食物名称', f.name],
+    ['分类', catOf(f.name)],
+    ['基础数量', `${f.baseQty}${f.unit}`],
+    ['GI值', f.gi || 0],
+    ['热量', `${f.nutrition.kj || 0} kJ`],
+    ['蛋白质', `${f.nutrition.protein || 0} g`],
+    ['脂肪', `${f.nutrition.fat || 0} g`],
+    ['碳水', `${f.nutrition.carb || 0} g`],
+    ['配料', f.ingredients || ''],
+    ['备注', f.remark || ''],
+    ['单位重量', Object.entries(f.weights||{}).map(([k,v])=>`${k}=${v}克`).join('，')]
+  ];
+  $('detailLines').innerHTML = lines.map(([k,v])=>`<div class="detail-line"><div class="detail-key">${k}</div><div class="detail-val">${v}</div></div>`).join('');
+  $('detailSheet').classList.add('show');
+}
+function addToMeal(name, meal){const f=getFood(name);state.mealPlan[meal].push({id:rid(),name,quantity:f.baseQty,unit:f.unit});persist();renderAll();toast(`已添加到${meal}`)}
+
+function editItem(meal, id){const item=state.mealPlan[meal].find(x=>x.id===id);if(!item)return;editing={meal,id};const f=getFood(item.name);$('iqty').value=item.quantity;$('iunit').innerHTML=allUnitsForFood(f).map(u=>`<option value="${u}">${u}</option>`).join('');$('iunit').value=item.unit;$('itemSheet').classList.add('show')}
+function saveItem(){if(!editing)return;const item=state.mealPlan[editing.meal].find(x=>x.id===editing.id);if(!item)return;item.quantity=Number($('iqty').value)||0;item.unit=$('iunit').value;persist();renderAll();closeSheet('itemSheet');toast('已保存')}
+function removeItem(meal, id){state.mealPlan[meal]=state.mealPlan[meal].filter(x=>x.id!==id);persist();renderAll()}
+function delItem(){if(!editing)return;removeItem(editing.meal, editing.id);closeSheet('itemSheet')}
+
+function clearHighlights(){document.querySelectorAll('.meal.drag-over').forEach(el=>el.classList.remove('drag-over'))}
+function mealFromPoint(x,y){const el=document.elementFromPoint(x,y);const card=el&&el.closest('.meal');return card?card.dataset.meal:null}
+function moveGhost(x,y){$('ghost').style.left=x+'px';$('ghost').style.top=y+'px';clearHighlights();const meal=mealFromPoint(x,y);if(meal){const card=document.querySelector(`.meal[data-meal="${meal}"]`);if(card)card.classList.add('drag-over')}}
+function startDrag(btn, touch){const name=btn.dataset.food;drag={name,btn};$('ghost').textContent=name;$('ghost').style.display='block';moveGhost(touch.clientX, touch.clientY)}
+function endDrag(x,y){if(!drag)return;const meal=mealFromPoint(x,y);$('ghost').style.display='none';clearHighlights();const name=drag.name;drag=null;if(meal)addToMeal(name, meal)}
+
+function bindFoodInteractions(){
+  document.querySelectorAll('.food').forEach(btn=>{
+    const info = btn.querySelector('.info');
+    if(info){
+      info.onclick = (e)=>{e.stopPropagation();openDetail(info.dataset.info)};
+      info.ontouchstart = (e)=>{e.stopPropagation()};
+      info.ontouchend = (e)=>{e.stopPropagation();openDetail(info.dataset.info)};
+    }
+    btn.ontouchstart = (e)=>{if(e.target.closest('.info'))return; startDrag(btn, e.touches[0]);};
+    btn.ontouchmove = (e)=>{if(drag){e.preventDefault(); moveGhost(e.touches[0].clientX, e.touches[0].clientY);}};
+    btn.ontouchend = (e)=>{if(drag){e.preventDefault(); endDrag(e.changedTouches[0].clientX, e.changedTouches[0].clientY);}};
+    btn.onmousedown = (e)=>{if(e.target.closest('.info'))return; e.preventDefault(); startDrag(btn, e)};
+  });
+}
+
+document.addEventListener('mousemove', e=>{if(drag)moveGhost(e.clientX, e.clientY)})
+document.addEventListener('mouseup', e=>{if(drag)endDrag(e.clientX, e.clientY)})
+document.addEventListener('click', e=>{const dd=$('metricDropdown'); const menu=$('metricMenu'); if(dd && menu && !dd.contains(e.target)) closeMetricMenu();})
+$('search').addEventListener('input', renderFoods);
+$('saveBtn').addEventListener('click', saveItem);
+$('delBtn').addEventListener('click', delItem);
+
+function openGoalSheet(){
+  const g=state.goals||{kcal:1600,pro:100,fat:50,carb:180};
+  $('gkcal').value=g.kcal||'';
+  $('gpro').value=g.pro||'';
+  $('gfat').value=g.fat||'';
+  $('gcarb').value=g.carb||'';
+  $('goalSheet').classList.add('show');
+}
+function saveGoals(){
+  state.goals={kcal:Number($('gkcal').value)||0,pro:Number($('gpro').value)||0,fat:Number($('gfat').value)||0,carb:Number($('gcarb').value)||0};
+  persist(); renderTop(); closeSheet('goalSheet'); toast('已保存');
+}
+function resetGoals(){
+  state.goals={kcal:1600,pro:100,fat:50,carb:180};
+  persist(); renderTop(); closeSheet('goalSheet'); toast('已重置');
+}
+
+renderAll();
+</script>
+</body>
+</html>
