@@ -16,7 +16,7 @@ button,input,select{font:inherit}
 .goal-link{font-size:12px;opacity:.92;cursor:pointer;align-self:flex-start}
 .big{font-size:34px;font-weight:800}
 .progress-wrap{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px;margin-bottom:10px}
-.progress-row{display:grid;grid-template-columns:62px 1fr 54px;gap:4px;align-items:center;font-size:13px}.progress-bar{height:8px;background:rgba(255,255,255,.2);border-radius:999px;overflow:hidden}.progress-fill{height:100%;background:rgba(255,255,255,.92);border-radius:999px}
+.progress-row{display:grid;grid-template-columns:72px 1fr 54px;gap:2px;align-items:center;font-size:15px}.progress-bar{height:8px;background:rgba(255,255,255,.2);border-radius:999px;overflow:hidden;margin-left:-2px}.progress-fill{height:100%;background:rgba(255,255,255,.92);border-radius:999px}
 .kgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
 .kcard{background:rgba(255,255,255,.11);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:9px 8px;text-align:center}
 .kcard .l{font-size:12px;opacity:.92}.kcard .v{font-size:16px;font-weight:800;margin-top:4px}
@@ -258,6 +258,7 @@ function toast(msg){const el=$('toast');el.textContent=msg;el.style.display='blo
 
 function load(){const saved=safeParse(localStorage.getItem(STORAGE),null);if(saved&&saved.mealPlan){saved.goals=saved.goals||{kcal:1600,pro:100,fat:50,carb:180};saved.bigMetric=saved.bigMetric||'kcal';return saved;}const mealPlan={};meals.forEach(m=>mealPlan[m]=[]);return {mealPlan,goals:{kcal:1600,pro:100,fat:50,carb:180},bigMetric:'kcal'}}
 let state = load();
+loadCustomFoods();
 
 function persist(){localStorage.setItem(STORAGE, JSON.stringify(state))}
 function getFood(name){return clone(lookup[name])}
@@ -304,6 +305,7 @@ function saveNewFood(){
     weights: {}
   });
   rebuildLookup();
+  saveCustomFoods();
   currentCat = cat;
   closeSheet('addFoodSheet');
   renderCatTabs();
@@ -444,6 +446,7 @@ function saveEditFood(){
     state.mealPlan[m].forEach(it=>{ if(it.name===oldName) it.name = newName; });
   });
   rebuildLookup();
+  saveCustomFoods();
   detailFoodName = newName;
   persist();
   renderAll();
@@ -459,6 +462,7 @@ function deleteFoodFromEdit(){
     state.mealPlan[m] = state.mealPlan[m].filter(it => it.name !== oldName);
   });
   rebuildLookup();
+  saveCustomFoods();
   persist();
   renderAll();
   closeSheet('editFoodSheet');
